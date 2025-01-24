@@ -6,20 +6,148 @@
     <title>Invoice Generator</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
     <style>
-        /* Your existing styles */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+        input, button {
+            padding: 10px;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        #add-item {
+            background-color: #007bff;
+        }
+        #add-item:hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Invoice Generator</h1>
         <form id="invoice-form">
-            <!-- Your existing form elements -->
+            <label for="clientName">Client Name</label>
+            <input type="text" id="clientName" placeholder="Enter client name" required>
+
+            <label for="invoiceDate">Invoice Date</label>
+            <input type="date" id="invoiceDate" required>
+
+            <div id="item-container">
+                <h3>Items</h3>
+                <div class="item">
+                    <label>Description</label>
+                    <input type="text" class="description" placeholder="Item description" required>
+                    <label>Quantity</label>
+                    <input type="number" class="quantity" min="1" placeholder="Quantity" required>
+                    <label>Price</label>
+                    <input type="number" class="price" min="0" step="0.01" placeholder="Price per unit" required>
+                </div>
+            </div>
+            <button type="button" id="add-item">Add Another Item</button>
+            <button type="submit">Generate Invoice</button>
         </form>
         <div id="invoice-output"></div>
     </div>
 
     <script>
-        // Function to dynamically bind events
+        document.getElementById('add-item').addEventListener('click', () => {
+            const itemContainer = document.getElementById('item-container');
+            const newItem = document.createElement('div');
+            newItem.classList.add('item');
+            newItem.innerHTML = `
+                <label>Description</label>
+                <input type="text" class="description" placeholder="Item description" required>
+                <label>Quantity</label>
+                <input type="number" class="quantity" min="1" placeholder="Quantity" required>
+                <label>Price</label>
+                <input type="number" class="price" min="0" step="0.01" placeholder="Price per unit" required>
+            `;
+            itemContainer.appendChild(newItem);
+        });
+
+        document.getElementById('invoice-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const clientName = document.getElementById('clientName').value.trim();
+            const invoiceDate = document.getElementById('invoiceDate').value;
+
+            const items = Array.from(document.querySelectorAll('#item-container .item')).map(item => ({
+                description: item.querySelector('.description').value.trim(),
+                quantity: parseInt(item.querySelector('.quantity').value),
+                price: parseFloat(item.querySelector('.price').value),
+                total: parseInt(item.querySelector('.quantity').value) * parseFloat(item.querySelector('.price').value),
+            }));
+
+            const totalAmount = items.reduce((sum, item) => sum + item.total, 0);
+
+            const invoiceOutput = `
+                <h2>Invoice</h2>
+                <p><strong>Client Name:</strong> ${clientName}</p>
+                <p><strong>Invoice Date:</strong> ${invoiceDate}</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th>Quantity</th>
+                            <th>Price</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${items.map(item => `
+                            <tr>
+                                <td>${item.description}</td>
+                                <td>${item.quantity}</td>
+                                <td>${item.price.toFixed(2)}</td>
+                                <td>${item.total.toFixed(2)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                <h3>Total: ${totalAmount.toFixed(2)}</h3>
+            `;
+
+            document.getElementById('invoice-output').innerHTML = invoiceOutput;
+            bindDownloadButton(clientName, invoiceDate, items, totalAmount);
+        });
+
         function bindDownloadButton(clientName, invoiceDate, items, totalAmount) {
             const downloadBtn = document.createElement('button');
             downloadBtn.textContent = "Download PDF";
@@ -28,7 +156,6 @@
             document.getElementById('invoice-output').appendChild(downloadBtn);
         }
 
-        // Function to handle dynamic pagination in PDF
         function downloadPDF(clientName, invoiceDate, items, totalAmount) {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
@@ -63,55 +190,9 @@
 
             doc.text(`Total Amount: ${totalAmount.toFixed(2)}`, 20, yOffset);
 
-            const fileName = `Invoice_${clientName.replace(/[^a-z0-9]/gi, '_').replace(/^_+|_+$/g, '')}.pdf`;
+            const fileName = `Invoice_${clientName.replace(/[^a-z0-9]/gi, '_')}.pdf`;
             doc.save(fileName);
         }
-
-        document.getElementById('invoice-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-
-            const clientName = document.getElementById('clientName').value.trim();
-            const invoiceDate = document.getElementById('invoiceDate').value;
-
-            const items = Array.from(document.querySelectorAll('#item-container .item')).map(item => ({
-                description: item.querySelector('.description').value.trim(),
-                quantity: parseInt(item.querySelector('.quantity').value),
-                price: parseFloat(item.querySelector('.price').value),
-                total: parseFloat(item.querySelector('.quantity').value) * parseFloat(item.querySelector('.price').value)
-            }));
-
-            const totalAmount = items.reduce((sum, item) => sum + item.total, 0);
-
-            const invoiceOutput = `
-                <h2>Invoice</h2>
-                <p><strong>Client Name:</strong> ${clientName}</p>
-                <p><strong>Invoice Date:</strong> ${invoiceDate}</p>
-                <table border="1" width="100%" style="border-collapse: collapse;">
-                    <thead>
-                        <tr>
-                            <th>Description</th>
-                            <th>Quantity</th>
-                            <th>Price</th>
-                            <th>Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${items.map(item => `
-                            <tr>
-                                <td>${item.description}</td>
-                                <td>${item.quantity}</td>
-                                <td>${item.price.toFixed(2)}</td>
-                                <td>${item.total.toFixed(2)}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-                <h3>Total: ${totalAmount.toFixed(2)}</h3>
-            `;
-
-            document.getElementById('invoice-output').innerHTML = invoiceOutput;
-            bindDownloadButton(clientName, invoiceDate, items, totalAmount);
-        });
     </script>
 </body>
 </html>
