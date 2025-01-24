@@ -4,7 +4,75 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Invoice Generator</title>
-    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #fff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        form div {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+
+        #add-item, .remove-item {
+            background-color: #007bff;
+            color: #fff;
+        }
+
+        #add-item:hover, .remove-item:hover {
+            background-color: #0056b3;
+        }
+
+        #invoice-output {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -34,6 +102,74 @@
         </form>
         <div id="invoice-output"></div>
     </div>
-    <script src="script.js"></script>
+
+    <script>
+        document.getElementById('add-item').addEventListener('click', () => {
+            const container = document.getElementById('item-container');
+            const newItem = document.createElement('div');
+            newItem.className = 'item';
+            newItem.innerHTML = `
+                <input type="text" placeholder="Item description" class="description" required>
+                <input type="number" placeholder="Quantity" class="quantity" min="1" required>
+                <input type="number" placeholder="Price" class="price" min="0" step="0.01" required>
+                <button type="button" class="remove-item">Remove</button>
+            `;
+            container.appendChild(newItem);
+        });
+
+        document.getElementById('item-container').addEventListener('click', (e) => {
+            if (e.target.classList.contains('remove-item')) {
+                e.target.parentElement.remove();
+            }
+        });
+
+        document.getElementById('invoice-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const clientName = document.getElementById('clientName').value;
+            const invoiceDate = document.getElementById('invoiceDate').value;
+
+            const items = Array.from(document.querySelectorAll('#item-container .item')).map(item => {
+                return {
+                    description: item.querySelector('.description').value,
+                    quantity: parseInt(item.querySelector('.quantity').value),
+                    price: parseFloat(item.querySelector('.price').value),
+                    total: parseFloat(item.querySelector('.quantity').value) * parseFloat(item.querySelector('.price').value)
+                };
+            });
+
+            const totalAmount = items.reduce((sum, item) => sum + item.total, 0);
+
+            const invoiceOutput = `
+                <h2>Invoice</h2>
+                <p><strong>Client Name:</strong> ${clientName}</p>
+                <p><strong>Invoice Date:</strong> ${invoiceDate}</p>
+                <table border="1" width="100%" style="border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th>Quantity</th>
+                            <th>Price</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${items.map(item => `
+                            <tr>
+                                <td>${item.description}</td>
+                                <td>${item.quantity}</td>
+                                <td>${item.price.toFixed(2)}</td>
+                                <td>${item.total.toFixed(2)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                <h3>Total: ${totalAmount.toFixed(2)}</h3>
+                <button onclick="window.print()">Print Invoice</button>
+            `;
+
+            document.getElementById('invoice-output').innerHTML = invoiceOutput;
+        });
+    </script>
 </body>
 </html>
